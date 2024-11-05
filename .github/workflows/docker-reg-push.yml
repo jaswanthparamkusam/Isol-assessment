@@ -1,37 +1,42 @@
-name: Build and Push to Artifact Registry
+name: Build and Push Docker Image to Google Artifact Registry
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main  # Trigger the workflow on pushes to the 'main' branch
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest  # Use an Ubuntu runner
 
-    - name: Set up gcloud auth
-      id: auth
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Set up Docker Buildx (necessary for building multi-platform images)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # Step 3: Authenticate to Google Cloud using service account credentials
+    - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        credentials_json: ${{ secrets.GCP_SA_KEY }}  # Use the secret GCP_SA_KEY that you created in GitHub
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
-
-    - name: Configure Docker for Artifact Registry
+    # Step 4: Configure Docker to authenticate with Google Artifact Registry
+    - name: Configure Docker for Google Artifact Registry
       run: |
-        gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+        gcloud auth configure-docker us-central1-docker.pkg.dev  # Replace with your Artifact Registry's location
 
+    # Step 5: Build the Docker image
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPOSITORY_NAME }}/${{ github.event.repository.name }}:${{ github.sha }} .
-        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPOSITORY_NAME }}/${{ github.event.repository.name }}:latest .
+        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/jaswanth-repo/my-image:latest .
+        # Replace 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repository/my-image:latest' with your registry, project ID, repo name, and image name
 
-    - name: Push Docker image
+    # Step 6: Push the Docker image to Google Artifact Registry
+    - name: Push Docker image to Artifact Registry
       run: |
-        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPOSITORY_NAME }}/${{ github.event.repository.name }}:${{ github.sha }}
-        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPOSITORY_NAME }}/${{ github.event.repository.name }}:latest
+        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/jaswanth-repo/my-image:latest
+        # Replace with the full URL of your Artifact Registry image
