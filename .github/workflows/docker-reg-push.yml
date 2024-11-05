@@ -24,7 +24,7 @@ jobs:
       id: docker-auth
       uses: 'docker/login-action@v1'
       with:
-        username: 'oauth2accesstoken'
+        username: 'artifact-writer@jump-machine.iam.gserviceaccount.com'
         password: '${{ steps.auth.outputs.access_token }}'
         registry: 'us-central1-docker.pkg.dev'        
 
